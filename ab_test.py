@@ -382,7 +382,7 @@ def calculate_ab_test(
     )
 
     # Calculate confidence intervals for control and variant
-    z_alpha = norm.ppf(1 - (1 - confidence_level_input / 100))
+    z_alpha = norm.ppf(confidence_level)
     control_ci = calculate_confidence_interval(conversion_rate_control, control_visitors, z_alpha)
     variant_ci = calculate_confidence_interval(conversion_rate_variant, variant_visitors, z_alpha)
 
@@ -431,18 +431,6 @@ if __name__ == "__main__":
                     daily_visitors_total=150,
                     )
     print("Number of days required for A/B test:", number_of_days)
-
-    # test sample size calculation
-    p1 = 9.09 / 100  # 9.09% conversion rate for control group
-    lift_percentage = 54
-    confidence_level = 95  # 95% confidence level
-    power = 80  # 80% power
-    num_variants = 2
-    is_one_sided = True
-
-    sample_size = calculate_sample_size(p1, lift_percentage, confidence_level, power, num_variants, is_one_sided)
-
-    print("Required Sample Size per Group:", sample_size)
     
     # Input parameters
     control_visitors = 1100
@@ -470,8 +458,6 @@ if __name__ == "__main__":
         print("P-value (1-sided): {:.5f}".format(results['p_value_1sided']))
         print("Significance: {}".format(results['p_value_1sided_significance']))
         print("Required Sample Size per Group: {}".format(results['sample_size_per_group']))
-        print("Sample Size (Control): {}".format(results['sample_size_control']))
-        print("Sample Size (Variant): {}".format(results['sample_size_variant']))
         print("Confidence Interval (Control): {:.2f}% - {:.2f}%".format(*results['confidence_interval_control']))
         print("Confidence Interval (Variant): {:.2f}% - {:.2f}%".format(*results['confidence_interval_variant']))
         print("Minimum Detectable Effect (MDE): {:.2f}%".format(results['relative_mde']))
