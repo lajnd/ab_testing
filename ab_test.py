@@ -178,11 +178,15 @@ def weekly_mde_and_significance_calculator(
         z_alpha = norm.ppf(1 - (1 - confidence_level))  # One-tailed test
         required_difference = z_alpha * se
 
+        this_weeks_conversion_rate_control = baseline_conversion_rate * weekly_visitors_per_group
+        this_weeks_conversion_rate_variant = (baseline_conversion_rate + (relative_mde / 100) * baseline_conversion_rate) * weekly_visitors_per_group
+        
+
         # Calculate p-value for the current week
         p_value_result = calculate_p_value(
-            control_conversions=int(baseline_conversion_rate * weekly_visitors_per_group),
+            control_conversions=int(this_weeks_conversion_rate_control),
             control_visitors=int(weekly_visitors_per_group),
-            variant_conversions=int((baseline_conversion_rate + (relative_mde / 100) * baseline_conversion_rate) * weekly_visitors_per_group),
+            variant_conversions=int(this_weeks_conversion_rate_variant),
             variant_visitors=int(weekly_visitors_per_group),
             is_one_sided=True
         )
@@ -200,7 +204,7 @@ def weekly_mde_and_significance_calculator(
 
 def calculate_confidence_interval(conversion_rate: float, 
                                   visitors: int, 
-                                  z_alpha: float) -> float:
+                                  z_alpha: float) -> tuple:
     """
     Calculate the confidence interval for a given conversion rate.
     Parameters:
