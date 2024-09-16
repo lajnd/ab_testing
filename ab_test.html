@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A/B Test Calculator</title>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/jstat/1/jstat.min.js"></script>
+</head>
+<body>
+    <h1>A/B Test Calculator</h1>
+    <form id="ab-test-form">
+        <div>
+            <label for="n-days">Number of days:</label>
+            <input type="number" id="n-days" required>
+        </div>
+        <div>
+            <label for="control-visitors">Control Visitors:</label>
+            <input type="number" id="control-visitors" required>
+        </div>
+        <div>
+            <label for="control-conversions">Control Conversions:</label>
+            <input type="number" id="control-conversions" required>
+        </div>
+        <div>
+            <label for="variant-visitors">Variant Visitors:</label>
+            <input type="number" id="variant-visitors" required>
+        </div>
+        <div>
+            <label for="variant-conversions">Variant Conversions:</label>
+            <input type="number" id="variant-conversions" required>
+        </div>
+        <div>
+            <label for="confidence-level">Confidence Level (%):</label>
+            <input type="number" id="confidence-level" value="95" required>
+        </div>
+        <div>
+            <label for="statistical-power">Statistical Power (%):</label>
+            <input type="number" id="statistical-power" value="80" required>
+        </div>
+        <div>
+            <label for="desired-effect-size">Desired Effect Size (MDE) (%):</label>
+            <input type="number" id="desired-effect-size" required>
+        </div>
+    </form>
+
+    <button type="button" id="calculate-button">Calculate</button>
+
+    <div id="results">
+        <h2>Results</h2>
+        <p id="conversion-rate-control">Conversion Rate (Control):</p>
+        <p id="conversion-rate-variant">Conversion Rate (Variant):</p>
+        <p id="lift">Lift (relative difference):</p>
+        <p id="p-value-2-side">P-value (2-sided):</p>
+        <p id="significance-2-sided">P-value (2-sided) Significance:</p>
+        <p id="sample-size">Required Sample Size (per group):</p>
+        <p id="mde">Minimum Detectable Effect (MDE):</p>
+        <p id="confidence-interval-control">Confidence Interval (Control):</p>
+        <p id="confidence-interval-variant">Confidence Interval (Variant):</p>
+        <p id="bayesian-variant-wins">Bayesian P(Variant &gt; Control):</p>
+        <p id="bayesian-control-wins">Bayesian P(Control &gt; Variant):</p>
+    </div>
+
+    <script type="text/javascript" src="abtest.js"></script>
+</body>
+</html>
