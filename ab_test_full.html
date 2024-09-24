@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A/B Test Calculator</title>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/jstat/1/jstat.min.js"></script>
+    <script src="ab_test_full.js"></script> 
+</head>
+<body>
+    <h1>A/B Test Calculator</h1>
+    <form id="ab-test-form">
+        <div>
+            <label for="n-days">Number of days:</label>
+            <input type="number" id="n-days" required>
+        </div>
+        <div>
+            <label for="control-visitors">Control Visitors:</label>
+            <input type="number" id="control-visitors" required>
+        </div>
+        <div>
+            <label for="control-conversions">Control Conversions:</label>
+            <input type="number" id="control-conversions" required>
+        </div>
+        <div>
+            <label for="variant-visitors">Variant Visitors:</label>
+            <input type="number" id="variant-visitors" required>
+        </div>
+        <div>
+            <label for="variant-conversions">Variant Conversions:</label>
+            <input type="number" id="variant-conversions" required>
+        </div>
+        <div>
+            <label for="confidence-level">Confidence Level (%):</label>
+            <input type="number" id="confidence-level" value="95" required>
+        </div>
+        <div>
+            <label for="statistical-power">Statistical Power (%):</label>
+            <input type="number" id="statistical-power" value="80" required>
+        </div>
+        <div>
+            <label for="desired-effect-size">Desired Effect Size (MDE) (%):</label>
+            <input type="number" id="desired-effect-size" required>
+        </div>
+    </form>
+
+    <button type="button" id="calculate-button" onclick="fetchFormAndCalculate()">Calculate</button>
+
+    <h2>Results</h2>
+    <table border="1">
+        <tr>
+            <td>Control Conversion Rate ✔</td>
+            <td id="conversion-rate-control">-</td>
+        </tr>
+        <tr>
+            <td>Variant Conversion Rate ✔</td>
+            <td id="conversion-rate-variant">-</td>
+        </tr>
+        <tr>
+            <td>Lift (%) ✔</td>
+            <td id="lift">-</td>
+        </tr>
+        <tr>
+            <td>Difference (pp) ✔</td>
+            <td id="difference-pp">-</td>
+        </tr>
+        <tr>
+            <td>Confidence Interval (Difference, %) ✔</td>
+            <td id="confidence-interval-diff">-</td>
+        </tr>
+        <tr>
+            <td>Right-Sided Interval (%) ✔</td>
+            <td id="right-sided-interval">-</td>
+        </tr>
+        <tr>
+            <td>Left-Sided Interval (%) ✔</td>
+            <td id="left-sided-interval">-</td>
+        </tr>
+        <tr>
+            <td>Value ± 95% SE (pp) ✔</td>
+            <td id="value-plus-minus-SE">-</td>
+        </tr>
+        <tr>
+            <td>P-Value ✔</td>
+            <td id="p-value">-</td>
+        </tr>
+        <tr>
+            <td>Z-Score ✔</td>
+            <td id="z-score">-</td>
+        </tr>
+        <tr>
+            <td>Significance (One-sided) ✔</td>
+            <td id="significance">-</td>
+        </tr>
+        <tr>
+            <td>Sample Size Per Group ✔</td>
+            <td id="sample-size">-</td>
+        </tr>
+        <tr>
+            <td>Confidence Interval (Control, %) ❌</td>
+            <td id="control-ci">-</td>
+        </tr>
+        <tr>
+            <td>Confidence Interval (Variant, %) ❌</td>
+            <td id="variant-ci">-</td>
+        </tr>
+        <tr>
+            <td>Relative MDE (%) ❌</td>
+            <td id="relative-mde">-</td>
+        </tr>
+        <tr>
+            <td>Bayesian Probability: Variant Wins (%) ❌</td>
+            <td id="bayesian-variant-wins">-</td>
+        </tr>
+        <tr>
+            <td>Bayesian Probability: Control Wins (%) ❌</td>
+            <td id="bayesian-control-wins">-</td>
+        </tr>
+        <tr>
+            <td>Bayes Factor (H1/H0) ✔</td>
+            <td id="bayes-factor">-</td>
+        </tr>
+    </table>
+</body>
+</html>

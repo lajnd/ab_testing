@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minimum Detectable Effect Calculator</title>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/jstat/1/jstat.min.js"></script>
+    <!-- Include your JavaScript file that contains calculateMDEOneSided function -->
+    <script src="ab_pre_test.js"></script> 
+</head>
+<body>
+    <h1>Minimum Detectable Effect Calculator</h1>
+    <form id="mde-calculator-form">
+        <div>
+            <label for="weekly-traffic">Weekly Traffic:</label>
+            <input type="number" id="weekly-traffic" required>
+        </div>
+        <div>
+            <label for="weekly-conversions">Weekly Conversions:</label>
+            <input type="number" id="weekly-conversions" required>
+        </div>
+        <div>
+            <label for="confidence-level">Confidence Level (%):</label>
+            <input type="number" id="confidence-level" value="95" required>
+        </div>
+        <div>
+            <label for="statistical-power">Statistical Power (%):</label>
+            <input type="number" id="statistical-power" value="80" required>
+        </div>
+        <div>
+            <label for="number-of-variants">Number of Variants:</label>
+            <input type="number" id="number-of-variants" value="2" required>
+        </div>
+    </form>
+
+    <button type="button" id="calculate-button" onclick="fetchFormAndCalculateMDE()">Calculate</button>
+
+    <h2>Results</h2>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Number of Weeks Running Test</th>
+                <th>Relative MDE (%)</th>
+                <th>Visitors per Variant</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>1</td>
+                <td id="mde_week_1">-</td>
+                <td id="visitors_week_1">-</td>
+            </tr>
+            <tr>
+                <td>2</td>
+                <td id="mde_week_2">-</td>
+                <td id="visitors_week_2">-</td>
+            </tr>
+            <tr>
+                <td>3</td>
+                <td id="mde_week_3">-</td>
+                <td id="visitors_week_3">-</td>
+            </tr>
+            <tr>
+                <td>4</td>
+                <td id="mde_week_4">-</td>
+                <td id="visitors_week_4">-</td>
+            </tr>
+            <tr>
+                <td>5</td>
+                <td id="mde_week_5">-</td>
+                <td id="visitors_week_5">-</td>
+            </tr>
+            <tr>
+                <td>6</td>
+                <td id="mde_week_6">-</td>
+                <td id="visitors_week_6">-</td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+</html>

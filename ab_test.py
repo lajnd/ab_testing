@@ -1,5 +1,6 @@
 import math
 from scipy.stats import norm, beta
+from scipy.special import betaln
 import numpy as np
 
 def duration_calculator(
@@ -36,9 +37,8 @@ def duration_calculator(
     # Calculate p2 based on MDE 
     # relative difference MDE
     p2 = p1 * (1 + mde)
-    if p2 >= 1:
-        p2 = 0.9999  # Ensure p2 is less than 1
-    
+    p2 = min(p2, 0.9999)  # Ensure p2 is less than 1
+
     # Calculate z-scores
     alpha = 1 - confidence_level
     if is_one_sided:
@@ -243,11 +243,26 @@ def calculate_relative_mde(control_sample_size, variant_sample_size, baseline_co
 
     return relative_mde_percentage
 
+
+
 def calculate_bayesian_probability(control_conversions: int, 
                                    control_visitors: int, 
                                    variant_conversions: int, 
                                    variant_visitors: int,
                                    simulations=100_000) -> dict:
+    
+    """
+    Calculate the Bayesian probability that the variant is better than the control.
+
+    Parameters:
+        control_conversions (int): The number of conversions in the control group.
+        control_visitors (int): The number of visitors in the control group.
+        variant_conversions (int): The number of conversions in the variant group.
+        variant_visitors (int): The number of visitors in the variant group.
+        simulations (int): The number of Monte Carlo simulations to run (default is 100,000).
+    Returns:
+        dict: A dictionary containing the probability that the variant is better than the control and the Bayes Factor.
+    """
     # Beta prior parameters (assume non-informative priors)
     alpha_prior = 1
     beta_prior = 1
@@ -270,9 +285,35 @@ def calculate_bayesian_probability(control_conversions: int,
     probability_variant_wins = variant_wins / simulations
     probability_control_wins = 1 - probability_variant_wins
 
+    # Compute Bayes Factor BF_10 (evidence in favor of H1 over H0)
+    # Log Marginal Likelihood under H1
+    ln_ml_H1 = (
+        betaln(control_conversions + alpha_prior, control_visitors - control_conversions + beta_prior) -
+        betaln(alpha_prior, beta_prior) +
+        betaln(variant_conversions + alpha_prior, variant_visitors - variant_conversions + beta_prior) -
+        betaln(alpha_prior, beta_prior)
+    )
+
+    # Log Marginal Likelihood under H0
+    total_conversions = control_conversions + variant_conversions
+    total_visitors = control_visitors + variant_visitors
+    ln_ml_H0 = (
+        betaln(total_conversions + alpha_prior, total_visitors - total_conversions + beta_prior) -
+        betaln(alpha_prior, beta_prior)
+    )
+
+    # Compute the Bayes Factor (BF_10)
+    ln_BF_10 = ln_ml_H1 - ln_ml_H0
+    BF_10 = np.exp(ln_BF_10)
+
+    # Checking if ln_BF_10 is too large or small
+    if np.isinf(BF_10) or np.isnan(BF_10):
+        BF_10 = float('inf') if ln_BF_10 > 0 else 0.0
+
     return {
         'probability_variant_wins': probability_variant_wins,
-        'probability_control_wins': probability_control_wins
+        'probability_control_wins': probability_control_wins,
+        'bayes_factor_H1_H0': BF_10 
     }
 
 def calculate_sample_size(
@@ -285,10 +326,6 @@ def calculate_sample_size(
 ) -> int:
     """
     Calculate the required sample size for an A/B test.
-    I have compared this method with the ones described here:
-    https://towardsdatascience.com/required-sample-size-for-a-b-testing-6f6608dd330a
-
-    And I get the same results.
     
     Parameters:
         p1 (float): The baseline conversion rate (proportion) for the control group.
@@ -344,7 +381,6 @@ def calculate_ab_test(
     confidence_level_input: float,
     statistical_power_input: float,
     ) -> dict:
-    
 
     # Convert percentages to proportions
     confidence_level = confidence_level_input / 100
@@ -368,12 +404,45 @@ def calculate_ab_test(
     )
     
     z_score = p_value_result['z_score']
-    p_value_1sided = p_value_result['p_value']
-    p_value_1sided_significance = 'Significant' if p_value_1sided < (1 - confidence_level) else 'Not Significant'
+    p_value = p_value_result['p_value']
+    p_value_1sided_significance = 'Significant' if p_value < (1 - confidence_level) else 'Not Significant'
 
     # Calculate Lift (relative difference)
     absolute_difference = conversion_rate_variant - conversion_rate_control
     lift = (absolute_difference / conversion_rate_control) * 100
+
+    # Difference in percentage points
+    difference_pp = absolute_difference * 100
+
+    # Calculate standard error for the difference
+    SE_diff = math.sqrt(
+        (conversion_rate_control * (1 - conversion_rate_control)) / control_visitors +
+        (conversion_rate_variant * (1 - conversion_rate_variant)) / variant_visitors
+    )
+
+    # Z-scores for confidence intervals
+    z_alpha_two_sided = norm.ppf(1 - (1 - confidence_level) / 2)
+    z_alpha_one_sided = norm.ppf(confidence_level)
+
+    # Two-sided confidence interval for the difference
+    lower_ci_diff = absolute_difference - z_alpha_two_sided * SE_diff
+    upper_ci_diff = absolute_difference + z_alpha_two_sided * SE_diff
+    lower_ci_diff_pp = lower_ci_diff * 100
+    upper_ci_diff_pp = upper_ci_diff * 100
+
+    # Right-sided (one-sided) confidence interval
+    lower_ci_right_sided = absolute_difference - z_alpha_one_sided * SE_diff
+    lower_ci_right_sided_pp = lower_ci_right_sided * 100  # Convert to percentage points
+
+    # Left-sided (one-sided) confidence interval
+    upper_ci_left_sided = absolute_difference + z_alpha_one_sided * SE_diff
+    upper_ci_left_sided_pp = upper_ci_left_sided * 100  # Convert to percentage points
+
+    # Value ± 95% SE
+    SE_95 = z_alpha_two_sided * SE_diff
+    SE_95_pp = SE_95 * 100  # Convert to percentage points
+
+    value_plus_minus_SE = (difference_pp, SE_95_pp)  # As (value, ± SE)
 
     # Update sample size calculation
     sample_size_per_group = calculate_sample_size(
@@ -381,7 +450,7 @@ def calculate_ab_test(
         lift_percentage=lift,
         confidence_level=confidence_level_input,
         power=statistical_power_input,
-        num_variants=len([control_visitors, variant_visitors]),
+        num_variants=2,
         is_one_sided=True
     )
 
@@ -408,22 +477,28 @@ def calculate_ab_test(
     )
 
     # Prepare the results
-    results = {
+    return {
         'conversion_rate_control': conversion_rate_control * 100,  # As percentage
         'conversion_rate_variant': conversion_rate_variant * 100,  # As percentage
         'lift': lift,  # In percentage
-        'p_value_1sided': p_value_1sided,
-        'p_value_1sided_significance': p_value_1sided_significance,
+        'difference_pp': difference_pp,  # Difference in percentage points
+        'confidence_interval_difference_pp': (lower_ci_diff_pp, upper_ci_diff_pp),  # 95% CI in percentage points
+        'right_sided_interval_pp': (lower_ci_right_sided_pp, float('inf')),  # Right-sided interval
+        'left_sided_interval_pp': (float('-inf'), upper_ci_left_sided_pp),  # Left-sided interval
+        'value_plus_minus_95_SE_pp': (difference_pp, SE_95_pp),  # Value ± 95% SE
+        'p_value': p_value,  # P-value for H0: B ≤ A
         'z_score': z_score,
+        'p_value_1sided_significance': p_value_1sided_significance,
         'sample_size_per_group': sample_size_per_group,
         'confidence_interval_control': (control_ci[0] * 100, control_ci[1] * 100),  # As percentage
         'confidence_interval_variant': (variant_ci[0] * 100, variant_ci[1] * 100),  # As percentage
         'relative_mde': relative_mde,  # In percentage
         'bayesian_variant_wins': bayesian_results['probability_variant_wins'] * 100,  # As percentage
         'bayesian_control_wins': bayesian_results['probability_control_wins'] * 100,  # As percentage
+        'bayes_factor_H1_H0': bayesian_results['bayes_factor_H1_H0']
+
     }
 
-    return results
 
 # Example usage
 if __name__ == "__main__":
@@ -436,10 +511,11 @@ if __name__ == "__main__":
                     )
     print("Number of days required for A/B test:", number_of_days)
     
+
     # Input parameters
-    control_visitors = 1100
+    control_visitors = 1000
     control_conversions = 100
-    variant_visitors = 1100
+    variant_visitors = 1000
     variant_conversions = 140
     confidence_level_input = 95  # in percentage
     statistical_power_input = 80  # in percentage
@@ -459,14 +535,30 @@ if __name__ == "__main__":
         print("Conversion Rate (Control): {:.2f}%".format(results['conversion_rate_control']))
         print("Conversion Rate (Variant): {:.2f}%".format(results['conversion_rate_variant']))
         print("Lift: {:.2f}%".format(results['lift']))
-        print("P-value (1-sided): {:.5f}".format(results['p_value_1sided']))
+        print("Difference (B-A): {:.4f} ({:.1f} p.p.)".format(
+            results['difference_pp'] / 100, results['difference_pp']))
+        print("95% Confidence Interval: [{:.4f} , {:.4f}]".format(
+            results['confidence_interval_difference_pp'][0] / 100,
+            results['confidence_interval_difference_pp'][1] / 100))
+        print("95% Right-Sided Interval: [{:.4f} , +∞]".format(
+            results['right_sided_interval_pp'][0] / 100))
+        print("95% Left-Sided Interval: [-∞ , {:.4f}]".format(
+            results['left_sided_interval_pp'][1] / 100))
+        print("Value ± 95% SE: {:.4f} ±{:.4f}".format(
+            results['value_plus_minus_95_SE_pp'][0] / 100,
+            results['value_plus_minus_95_SE_pp'][1] / 100))
+        print("P-value (X; H₀: B ≤ A): {:.6f}".format(results['p_value']))
+        print("Z-score: {:.6f}".format(results['z_score']))
         print("Significance: {}".format(results['p_value_1sided_significance']))
         print("Required Sample Size per Group: {}".format(results['sample_size_per_group']))
-        print("Confidence Interval (Control): {:.2f}% - {:.2f}%".format(*results['confidence_interval_control']))
-        print("Confidence Interval (Variant): {:.2f}% - {:.2f}%".format(*results['confidence_interval_variant']))
+        print("Confidence Interval (Control): {:.2f}% - {:.2f}%".format(
+            *results['confidence_interval_control']))
+        print("Confidence Interval (Variant): {:.2f}% - {:.2f}%".format(
+            *results['confidence_interval_variant']))
         print("Minimum Detectable Effect (MDE): {:.2f}%".format(results['relative_mde']))
         print("Bayesian P(Variant > Control): {:.2f}%".format(results['bayesian_variant_wins']))
         print("Bayesian P(Control > Variant): {:.2f}%".format(results['bayesian_control_wins']))
+        print("Bayes Factor (H1 over H0): {:.4f}".format(results['bayes_factor_H1_H0']))
 
     except ValueError as e:
         print("Error:", e)
