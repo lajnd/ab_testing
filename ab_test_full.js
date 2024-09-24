@@ -1,50 +1,74 @@
-
+/**
+ * Fetches input values from the form, performs A/B test calculations, and updates the results in the DOM.
+ */
 function fetchFormAndCalculate() {
-    // Fetch input values from the form
-    const controlVisitors = parseInt(document.getElementById('control-visitors').value);
-    const controlConversions = parseInt(document.getElementById('control-conversions').value);
-    const variantVisitors = parseInt(document.getElementById('variant-visitors').value);
-    const variantConversions = parseInt(document.getElementById('variant-conversions').value);
-    const confidenceLevelInput = parseFloat(document.getElementById('confidence-level').value);
-    const statisticalPowerInput = parseFloat(document.getElementById('statistical-power').value);
-    const desiredEffectSizePercentage = parseFloat(document.getElementById('desired-effect-size').value);
+    try {
+        // Fetch and parse input values from the form
+        const controlVisitors = Number(document.getElementById('control-visitors').value);
+        const controlConversions = Number(document.getElementById('control-conversions').value);
+        const variantVisitors = Number(document.getElementById('variant-visitors').value);
+        const variantConversions = Number(document.getElementById('variant-conversions').value);
+        const confidenceLevelInput = Number(document.getElementById('confidence-level').value);
+        const statisticalPowerInput = Number(document.getElementById('statistical-power').value);
 
-    // Call calculateAbTest with the fetched values
-    const results = calculateAbTest(
-        controlVisitors,
-        controlConversions,
-        variantVisitors,
-        variantConversions,
-        confidenceLevelInput,
-        statisticalPowerInput
-    );
+        // Validate input values
+        if (
+            [controlVisitors, controlConversions, variantVisitors, variantConversions, confidenceLevelInput, statisticalPowerInput].some(isNaN)
+        ) {
+            throw new Error('Please enter valid numerical values.');
+        }
 
-    // Update the document with the results
-    document.getElementById('conversion-rate-control').innerText = results.conversion_rate_control.toFixed(2) + '%';
-    document.getElementById('conversion-rate-variant').innerText = results.conversion_rate_variant.toFixed(2) + '%';
-    document.getElementById('lift').innerText = results.lift.toFixed(2) + '%';
-    document.getElementById('difference-pp').innerText = results.difference_pp.toFixed(2) + ' pp';
-    document.getElementById('confidence-interval-diff').innerText = 
-        results.confidence_interval_difference_pp[0].toFixed(2) + '% to ' + results.confidence_interval_difference_pp[1].toFixed(2) + '%';
-    document.getElementById('right-sided-interval').innerText = 
-        results.right_sided_interval_pp[0].toFixed(2) + '% to ' + (results.right_sided_interval_pp[1] === Infinity ? '∞' : results.right_sided_interval_pp[1].toFixed(2) + '%');
-    document.getElementById('left-sided-interval').innerText = 
-        (results.left_sided_interval_pp[0] === -Infinity ? '-∞' : results.left_sided_interval_pp[0].toFixed(2)) + '% to ' + results.left_sided_interval_pp[1].toFixed(2) + '%';
-    document.getElementById('value-plus-minus-SE').innerText = 
-        results.value_plus_minus_95_SE_pp[0].toFixed(2) + ' ± ' + results.value_plus_minus_95_SE_pp[1].toFixed(2) + ' pp';
-    document.getElementById('p-value').innerText = results.p_value.toFixed(4);
-    document.getElementById('z-score').innerText = results.z_score.toFixed(2);
-    document.getElementById('significance').innerText = results.p_value_1sided_significance;
-    document.getElementById('sample-size').innerText = results.sample_size_per_group;
-    document.getElementById('control-ci').innerText = 
-        results.confidence_interval_control[0].toFixed(2) + '% to ' + results.confidence_interval_control[1].toFixed(2) + '%';
-    document.getElementById('variant-ci').innerText = 
-        results.confidence_interval_variant[0].toFixed(2) + '% to ' + results.confidence_interval_variant[1].toFixed(2) + '%';
-    document.getElementById('relative-mde').innerText = results.relative_mde.toFixed(2) + '%';
-    document.getElementById('bayesian-variant-wins').innerText = results.bayesian_variant_wins.toFixed(2) + '%';
-    document.getElementById('bayesian-control-wins').innerText = results.bayesian_control_wins.toFixed(2) + '%';
-    document.getElementById('bayes-factor').innerText = results.bayes_factor_H1_H0.toFixed(2);
+        // Perform A/B test calculations
+        const results = calculateAbTest(
+            controlVisitors,
+            controlConversions,
+            variantVisitors,
+            variantConversions,
+            confidenceLevelInput,
+            statisticalPowerInput
+        );
+
+        // Update the DOM with the results
+        document.getElementById('conversion-rate-control').innerText = `${results.conversionRateControl.toFixed(2)}%`;
+        document.getElementById('conversion-rate-variant').innerText = `${results.conversionRateVariant.toFixed(2)}%`;
+        document.getElementById('lift').innerText = `${results.lift.toFixed(2)}%`;
+        document.getElementById('difference-pp').innerText = `${results.differencePercentagePoints.toFixed(2)} pp`;
+        document.getElementById('confidence-interval-diff').innerText =
+            `${results.confidenceIntervalDifferencePP[0].toFixed(2)}% to ${results.confidenceIntervalDifferencePP[1].toFixed(2)}%`;
+        document.getElementById('right-sided-interval').innerText =
+            `${results.rightSidedIntervalPP[0].toFixed(2)}% to ${results.rightSidedIntervalPP[1] === Infinity ? '∞' : `${results.rightSidedIntervalPP[1].toFixed(2)}%`}`;
+        document.getElementById('left-sided-interval').innerText =
+            `${results.leftSidedIntervalPP[0] === -Infinity ? '-∞' : results.leftSidedIntervalPP[0].toFixed(2)}% to ${results.leftSidedIntervalPP[1].toFixed(2)}%`;
+        document.getElementById('value-plus-minus-SE').innerText =
+            `${results.valuePlusMinus95SEPP[0].toFixed(2)} ± ${results.valuePlusMinus95SEPP[1].toFixed(2)} pp`;
+        document.getElementById('p-value').innerText = results.pValue.toFixed(4);
+        document.getElementById('z-score').innerText = results.zScore.toFixed(2);
+        document.getElementById('significance').innerText = results.pValueOneSidedSignificance;
+        document.getElementById('sample-size').innerText = results.sampleSizePerGroup;
+        document.getElementById('control-ci').innerText =
+            `${results.confidenceIntervalControl[0].toFixed(2)}% to ${results.confidenceIntervalControl[1].toFixed(2)}%`;
+        document.getElementById('variant-ci').innerText =
+            `${results.confidenceIntervalVariant[0].toFixed(2)}% to ${results.confidenceIntervalVariant[1].toFixed(2)}%`;
+        document.getElementById('relative-mde').innerText = `${results.relativeMDE.toFixed(2)}%`;
+        document.getElementById('bayesian-variant-wins').innerText = `${results.bayesianVariantWins.toFixed(2)}%`;
+        document.getElementById('bayesian-control-wins').innerText = `${results.bayesianControlWins.toFixed(2)}%`;
+        document.getElementById('bayes-factor').innerText = results.bayesFactorH1H0.toFixed(2);
+    } catch (error) {
+        console.error(error);
+        alert(`An error occurred: ${error.message}`);
+    }
 }
+
+/**
+ * Calculates various statistical metrics for A/B testing.
+ * @param {number} controlVisitors - Number of visitors in the control group.
+ * @param {number} controlConversions - Number of conversions in the control group.
+ * @param {number} variantVisitors - Number of visitors in the variant group.
+ * @param {number} variantConversions - Number of conversions in the variant group.
+ * @param {number} confidenceLevelInput - Desired confidence level (e.g., 95 for 95% confidence).
+ * @param {number} statisticalPowerInput - Desired statistical power (e.g., 80 for 80% power).
+ * @returns {Object} - An object containing calculated metrics.
+ */
 function calculateAbTest(
     controlVisitors,
     controlConversions,
@@ -53,86 +77,77 @@ function calculateAbTest(
     confidenceLevelInput,
     statisticalPowerInput
 ) {
-    // Convert percentages to proportions
-    let confidenceLevel = confidenceLevelInput / 100;
-    let statisticalPower = statisticalPowerInput / 100;
+    const confidenceLevel = confidenceLevelInput / 100;
+    const statisticalPower = statisticalPowerInput / 100;
 
     // Calculate conversion rates
-    let conversionRateControl = controlConversions / controlVisitors;
-    let conversionRateVariant = variantConversions / variantVisitors;
+    const conversionRateControl = controlConversions / controlVisitors;
+    const conversionRateVariant = variantConversions / variantVisitors;
 
-    // Handle edge cases - maybe this should be done elsewhere
-    if (conversionRateControl <= 0 || conversionRateControl >= 1 || conversionRateVariant <= 0 || conversionRateVariant >= 1) {
+    // Validate conversion rates
+    if (
+        [conversionRateControl, conversionRateVariant].some(
+            rate => rate <= 0 || rate >= 1
+        )
+    ) {
         throw new Error('Conversion rates must be between 0% and 100% (exclusive).');
     }
 
-    // Lets calculate p-value and z-score
-    let pValueResult = calculatePValue(
+    // Calculate p-value and z-score
+    const pValueResult = calculatePValue(
         controlConversions,
         controlVisitors,
         variantConversions,
-        variantVisitors,
-        true  // One-sided test a default for AB testing
+        variantVisitors
     );
 
-    let zScore = pValueResult.z_score;
-    let pValue = pValueResult.p_value;
-    let pValue1SidedSignificance = pValue < (1 - confidenceLevel) ? 'Significant' : 'Not Significant';
+    const zScore = pValueResult.zScore;
+    const pValue = pValueResult.pValue;
+    const pValueOneSidedSignificance = pValue < (1 - confidenceLevel) ? 'Significant' : 'Not Significant';
 
-    // Calculate Lift (relative difference)
-    let absoluteDifference = conversionRateVariant - conversionRateControl;
-    let lift = (absoluteDifference / conversionRateControl) * 100;
+    // Calculate lift and difference in percentage points
+    const absoluteDifference = conversionRateVariant - conversionRateControl;
+    const lift = (absoluteDifference / conversionRateControl) * 100;
+    const differencePercentagePoints = absoluteDifference * 100;
 
-    // Difference in percentage points
-    let differencePp = absoluteDifference * 100;
-
-    // Calculate standard error for the difference
-    let SE_diff = Math.sqrt(
+    // Standard error for the difference
+    const standardErrorDifference = Math.sqrt(
         (conversionRateControl * (1 - conversionRateControl)) / controlVisitors +
         (conversionRateVariant * (1 - conversionRateVariant)) / variantVisitors
     );
 
     // Z-scores for confidence intervals
-    let zAlphaTwoSided = jStat.normal.inv(1 - (1 - confidenceLevel) / 2, 0, 1);
-    let zAlphaOneSided = jStat.normal.inv(confidenceLevel, 0, 1);
+    const zAlphaTwoSided = jStat.normal.inv(1 - (1 - confidenceLevel) / 2, 0, 1);
+    const zAlphaOneSided = jStat.normal.inv(confidenceLevel, 0, 1);
 
-    // Two-sided confidence interval for the difference
-    let lowerCiDiff = absoluteDifference - zAlphaTwoSided * SE_diff;
-    let upperCiDiff = absoluteDifference + zAlphaTwoSided * SE_diff;
-    let lowerCiDiffPp = lowerCiDiff * 100;
-    let upperCiDiffPp = upperCiDiff * 100;
+    // Confidence intervals for the difference
+    const lowerCIDiff = absoluteDifference - zAlphaTwoSided * standardErrorDifference;
+    const upperCIDiff = absoluteDifference + zAlphaTwoSided * standardErrorDifference;
+    const confidenceIntervalDifferencePP = [lowerCIDiff * 100, upperCIDiff * 100];
 
-    // Right-sided (one-sided) confidence interval
-    let lowerCiRightSided = absoluteDifference - zAlphaOneSided * SE_diff;
-    let lowerCiRightSidedPp = lowerCiRightSided * 100;
-
-    // Left-sided (one-sided) confidence interval
-    let upperCiLeftSided = absoluteDifference + zAlphaOneSided * SE_diff;
-    let upperCiLeftSidedPp = upperCiLeftSided * 100;
+    // One-sided intervals
+    const lowerCIRightSidedPP = (absoluteDifference - zAlphaOneSided * standardErrorDifference) * 100;
+    const upperCILeftSidedPP = (absoluteDifference + zAlphaOneSided * standardErrorDifference) * 100;
 
     // Value ± 95% SE
-    let SE_95 = zAlphaTwoSided * SE_diff;
-    let SE_95Pp = SE_95 * 100;
-    let valuePlusMinusSE = [differencePp, SE_95Pp];
+    const SE95PP = zAlphaTwoSided * standardErrorDifference * 100;
+    const valuePlusMinus95SEPP = [differencePercentagePoints, SE95PP];
 
     // Sample size calculation
-    let sampleSizePerGroup = calculateSampleSize(
+    const sampleSizePerGroup = calculateSampleSize(
         conversionRateControl,
         lift,
         confidenceLevelInput,
-        statisticalPowerInput,
-        2,
-        true  // Should be one-sided tests
+        statisticalPowerInput
     );
 
     // Confidence intervals for control and variant
-    let zAlpha = jStat.normal.inv(confidenceLevel, 0, 1);
-    let controlCi = calculateConfidenceInterval(conversionRateControl, controlVisitors, zAlpha);
-    let variantCi = calculateConfidenceInterval(conversionRateVariant, variantVisitors, zAlpha);
+    const zAlpha = jStat.normal.inv(confidenceLevel, 0, 1);
+    const controlCI = calculateConfidenceInterval(conversionRateControl, controlVisitors, zAlpha);
+    const variantCI = calculateConfidenceInterval(conversionRateVariant, variantVisitors, zAlpha);
 
-    // Relative MDE (Minimum Detectable Effect)
-    // I am not a fan of this
-    let relativeMde = calculateRelativeMde(
+    // Relative MDE
+    const relativeMDE = calculateRelativeMDE(
         controlVisitors,
         variantVisitors,
         conversionRateControl,
@@ -141,140 +156,78 @@ function calculateAbTest(
     );
 
     // Bayesian probability
-    let bayesianResults = calculateBayesianProbability(
+    const bayesianResults = calculateBayesianProbability(
         controlConversions,
         controlVisitors,
         variantConversions,
         variantVisitors
     );
 
-    // Prepare the results
     return {
-        'conversion_rate_control': conversionRateControl * 100,  // As percentage
-        'conversion_rate_variant': conversionRateVariant * 100,  // As percentage
-        'lift': lift,  // In percentage
-        'difference_pp': differencePp,  // Difference in percentage points
-        'confidence_interval_difference_pp': [lowerCiDiffPp, upperCiDiffPp],  // 95% CI in percentage points
-        'right_sided_interval_pp': [lowerCiRightSidedPp, Infinity],  // Right-sided interval
-        'left_sided_interval_pp': [-Infinity, upperCiLeftSidedPp],  // Left-sided interval
-        'value_plus_minus_95_SE_pp': valuePlusMinusSE,  // Value ± 95% SE
-        'p_value': pValue,  // P-value for H0: B ≤ A
-        'z_score': zScore,
-        'p_value_1sided_significance': pValue1SidedSignificance,
-        'sample_size_per_group': sampleSizePerGroup,
-        'confidence_interval_control': [controlCi[0] * 100, controlCi[1] * 100],  // As percentage
-        'confidence_interval_variant': [variantCi[0] * 100, variantCi[1] * 100],  // As percentage
-        'relative_mde': relativeMde,  // In percentage
-        'bayesian_variant_wins': bayesianResults.probability_variant_wins * 100,  // As percentage
-        'bayesian_control_wins': bayesianResults.probability_control_wins * 100,  // As percentage
-        'bayes_factor_H1_H0': bayesianResults.bayes_factor_H1_H0
+        conversionRateControl: conversionRateControl * 100,
+        conversionRateVariant: conversionRateVariant * 100,
+        lift,
+        differencePercentagePoints,
+        confidenceIntervalDifferencePP,
+        rightSidedIntervalPP: [lowerCIRightSidedPP, Infinity],
+        leftSidedIntervalPP: [-Infinity, upperCILeftSidedPP],
+        valuePlusMinus95SEPP,
+        pValue,
+        zScore,
+        pValueOneSidedSignificance,
+        sampleSizePerGroup,
+        confidenceIntervalControl: [controlCI[0] * 100, controlCI[1] * 100],
+        confidenceIntervalVariant: [variantCI[0] * 100, variantCI[1] * 100],
+        relativeMDE,
+        bayesianVariantWins: bayesianResults.probabilityVariantWins * 100,
+        bayesianControlWins: bayesianResults.probabilityControlWins * 100,
+        bayesFactorH1H0: bayesianResults.bayesFactorH1H0
     };
 }
 
+/**
+ * Calculates the confidence interval for a given conversion rate.
+ * @param {number} conversionRate - The conversion rate (proportion between 0 and 1).
+ * @param {number} visitors - The number of visitors.
+ * @param {number} zAlpha - The z-score corresponding to the desired confidence level.
+ * @returns {number[]} - An array containing the lower and upper bounds of the confidence interval.
+ */
 function calculateConfidenceInterval(conversionRate, visitors, zAlpha) {
-    /*
-    Calculate the confidence interval for a given conversion rate.
-
-    Parameters:
-        conversionRate (float): The conversion rate.
-        visitors (int): The number of visitors.
-        zAlpha (float): The z-score corresponding to the desired confidence level.
-
-    Returns:
-        Array[float, float]: The lower and upper bounds of the confidence interval.
-    */
-
-    let marginOfError = zAlpha * Math.sqrt((conversionRate * (1 - conversionRate)) / visitors);
-    
+    const marginOfError = zAlpha * Math.sqrt((conversionRate * (1 - conversionRate)) / visitors);
     return [conversionRate - marginOfError, conversionRate + marginOfError];
 }
 
-function calculateRelativeMde(controlSampleSize, variantSampleSize, baselineConversionRate, confidenceLevel, statisticalPower) {
-    // Check if confidence level and statistical power are in percentage
-    if (confidenceLevel > 1) {
-        confidenceLevel = confidenceLevel / 100;
-    }
-    if (statisticalPower > 1) {
-        statisticalPower = statisticalPower / 100;
-    }
+/**
+ * Calculates the relative Minimum Detectable Effect (MDE) as a percentage.
+ * @param {number} controlSampleSize - Sample size of the control group.
+ * @param {number} variantSampleSize - Sample size of the variant group.
+ * @param {number} baselineConversionRate - Baseline conversion rate (proportion between 0 and 1).
+ * @param {number} confidenceLevel - Desired confidence level (proportion between 0 and 1).
+ * @param {number} statisticalPower - Desired statistical power (proportion between 0 and 1).
+ * @returns {number} - Relative MDE as a percentage.
+ */
+function calculateRelativeMDE(controlSampleSize, variantSampleSize, baselineConversionRate, confidenceLevel, statisticalPower) {
+    const zAlpha = jStat.normal.inv(confidenceLevel, 0, 1);
+    const zBeta = jStat.normal.inv(statisticalPower, 0, 1);
 
-    // Get z-scores for significance level and power (one-tailed test)
-    let zAlpha = jStat.normal.inv(confidenceLevel, 0, 1); // One-tailed test
-    let zBeta = jStat.normal.inv(statisticalPower, 0, 1);
-
-    // Adjusted standard error for unequal sample sizes
-    let se = Math.sqrt(
+    const standardError = Math.sqrt(
         (baselineConversionRate * (1 - baselineConversionRate) / controlSampleSize) +
         (baselineConversionRate * (1 - baselineConversionRate) / variantSampleSize)
     );
 
-    // Calculate the absolute MDE (difference) using z-scores and standard error
-    let absoluteMde = (zAlpha + zBeta) * se;
-
-    // Calculate the relative MDE as a percentage of the baseline conversion rate
-    let relativeMdePercentage = (absoluteMde / baselineConversionRate) * 100;
-
-    return relativeMdePercentage;
+    const absoluteMDE = (zAlpha + zBeta) * standardError;
+    return (absoluteMDE / baselineConversionRate) * 100;
 }
 
-function durationCalculator(
-    baselineConversionRatePercentage,
-    mdePercentage,
-    numberOfVariants,
-    dailyVisitorsTotal,
-    confidenceLevel = 95,
-    power = 80,
-    isOneSided = true
-) {
-    // Convert percentages to proportions
-    let p1 = baselineConversionRatePercentage / 100;
-    let mde = mdePercentage / 100;
-    confidenceLevel = confidenceLevel / 100;
-    power = power / 100;
-
-    // Calculate p2 based on MDE
-    let p2 = p1 * (1 + mde);
-    p2 = Math.min(p2, 0.9999);  // Ensure p2 is less than 1
-
-    // Calculate z-scores
-    let alpha = 1 - confidenceLevel;
-    let zAlpha;
-    if (isOneSided) {
-        zAlpha = jStat.normal.inv(1 - alpha, 0, 1);
-    } else {
-        zAlpha = jStat.normal.inv(1 - alpha / 2, 0, 1);
-    }
-    let zBeta = jStat.normal.inv(power, 0, 1);
-
-    // Adjust alpha for multiple variants if needed (Bonferroni correction)
-    if (numberOfVariants > 2) {
-        let alphaAdjusted = alpha / (numberOfVariants - 1);
-        zAlpha = jStat.normal.inv(1 - alphaAdjusted, 0, 1);
-    }
-
-    // Calculate pooled standard deviation
-    let pAvg = (p1 + p2) / 2;
-    let sigmaPooled = Math.sqrt(2 * pAvg * (1 - pAvg));
-
-    // Calculate numerator and denominator
-    let se = Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2));
-    let numerator = Math.pow(zAlpha * sigmaPooled + zBeta * se, 2);
-    let deltaP = p2 - p1;
-    let denominator = Math.pow(deltaP, 2);
-
-    // Calculate required sample size per group
-    let sampleSizePerGroup = Math.ceil(numerator / denominator);
-
-    // Calculate daily visitors per group
-    let dailyVisitorsPerGroup = dailyVisitorsTotal / numberOfVariants;
-
-    // Calculate number of days needed per group
-    let daysNeeded = Math.ceil(sampleSizePerGroup / dailyVisitorsPerGroup);
-
-    return daysNeeded;
-}
-
-
+/**
+ * Calculates the p-value and z-score for an A/B test.
+ * @param {number} controlConversions - Number of conversions in the control group.
+ * @param {number} controlVisitors - Number of visitors in the control group.
+ * @param {number} variantConversions - Number of conversions in the variant group.
+ * @param {number} variantVisitors - Number of visitors in the variant group.
+ * @param {boolean} isOneSided - Whether the test is one-sided (default is true).
+ * @returns {Object} - An object containing the z-score, p-value, and isSignificant (boolean).
+ */
 function calculatePValue(
     controlConversions,
     controlVisitors,
@@ -282,41 +235,20 @@ function calculatePValue(
     variantVisitors,
     isOneSided = true
 ) {
-    /**
-     * Calculate the p-value for an A/B test.
-     *
-     * Parameters:
-     *   controlConversions (int): Number of conversions in the control group.
-     *   controlVisitors (int): Number of visitors in the control group.
-     *   variantConversions (int): Number of conversions in the variant group.
-     *   variantVisitors (int): Number of visitors in the variant group.
-     *   isOneSided (bool): Whether the test is one-sided (default is true).
-     *
-     * Returns:
-     *   Object: An object containing the z-score, p-value, and isSignificant (boolean).
-     */
+    const conversionRateControl = controlConversions / controlVisitors;
+    const conversionRateVariant = variantConversions / variantVisitors;
+    const pooledConversionRate = (controlConversions + variantConversions) / (controlVisitors + variantVisitors);
 
-    // Calculate conversion rates
-    let conversionRateControl = controlConversions / controlVisitors;
-    let conversionRateVariant = variantConversions / variantVisitors;
-
-    // Pooled conversion rate across both groups
-    let pooledConversionRate = (controlConversions + variantConversions) / (controlVisitors + variantVisitors);
-
-    // Pooled standard error
-    let pooledSE = Math.sqrt(
+    const pooledSE = Math.sqrt(
         pooledConversionRate * (1 - pooledConversionRate) * (1 / controlVisitors + 1 / variantVisitors)
     );
 
-    // Handle cases where pooledSE is zero to avoid division by zero
     if (pooledSE === 0) {
         throw new Error("Pooled standard error is zero. Check your input values.");
     }
 
-    // Calculate z-score
-    let zScore = (conversionRateVariant - conversionRateControl) / pooledSE;
+    const zScore = (conversionRateVariant - conversionRateControl) / pooledSE;
 
-    // Calculate p-value based on one-sided or two-sided test
     let pValue;
     if (isOneSided) {
         pValue = 1 - jStat.normal.cdf(zScore, 0, 1);
@@ -324,212 +256,109 @@ function calculatePValue(
         pValue = 2 * (1 - jStat.normal.cdf(Math.abs(zScore), 0, 1));
     }
 
-    // Ensure p-value is between 0 and 1
     pValue = Math.min(Math.max(pValue, 0), 1);
 
     return {
-        z_score: zScore,
-        p_value: pValue,
-        is_significant: pValue < 0.05,
+        zScore,
+        pValue,
+        isSignificant: pValue < 0.05
     };
 }
 
-function weeklyMdeAndSignificanceCalculator(
-    baselineConversionRatePercentage,
-    numberOfVariants,
-    dailyVisitorsTotal,
-    confidenceLevel = 95,
-    power = 80,
-    weeks = 7
-) {
-    // Convert baseline conversion rate to a proportion
-    let baselineConversionRate = baselineConversionRatePercentage / 100;
-    confidenceLevel = confidenceLevel / 100;
-    power = power / 100;
-
-    // Calculate daily visitors per group
-    let dailyVisitorsPerGroup = dailyVisitorsTotal / numberOfVariants;
-
-    let results = [];
-
-    // Loop through each week and calculate MDE and significance
-    for (let week = 1; week <= weeks; week++) {
-        // Total visitors for the current week
-        let weeklyVisitorsPerGroup = dailyVisitorsPerGroup * 7 * week;
-
-        // Calculate the relative MDE for the current week
-        let relativeMde = calculateRelativeMde(
-            weeklyVisitorsPerGroup,
-            weeklyVisitorsPerGroup,
-            baselineConversionRate,
-            confidenceLevel,
-            power
-        );
-
-        // Calculate pooled standard error for significance testing
-        let se = Math.sqrt(
-            baselineConversionRate * (1 - baselineConversionRate) *
-            (1 / weeklyVisitorsPerGroup + 1 / weeklyVisitorsPerGroup)
-        );
-
-        // Calculate absolute difference needed for significance (MDE)
-        let zAlpha = jStat.normal.inv(1 - (1 - confidenceLevel), 0, 1); // One-tailed test
-        let requiredDifference = zAlpha * se;
-
-        let thisWeeksConversionRateControl = baselineConversionRate * weeklyVisitorsPerGroup;
-        let thisWeeksConversionRateVariant = 
-            (baselineConversionRate + (relativeMde / 100) * baselineConversionRate) * weeklyVisitorsPerGroup;
-
-        // Calculate p-value for the current week
-        let pValueResult = calculatePValue(
-            Math.round(thisWeeksConversionRateControl),
-            Math.round(weeklyVisitorsPerGroup),
-            Math.round(thisWeeksConversionRateVariant),
-            Math.round(weeklyVisitorsPerGroup),
-            true
-        );
-
-        // Append result for the week
-        results.push({
-            week: week,
-            relativeMde: relativeMde,
-            requiredDifferenceForSignificance: requiredDifference * 100, // Convert to percentage
-            pValue: pValueResult.pValue,
-            significance: pValueResult.isSignificant
-        });
-    }
-
-    return results;
-}
-
+/**
+ * Calculates the required sample size per group for an A/B test.
+ * @param {number} p1 - The baseline conversion rate (proportion between 0 and 1).
+ * @param {number} liftPercentage - The expected percentage increase in conversion rate.
+ * @param {number} confidenceLevel - Desired confidence level (e.g., 95 for 95% confidence).
+ * @param {number} power - Desired statistical power (e.g., 80 for 80% power).
+ * @param {number} numVariants - Number of variants being tested (default is 2).
+ * @param {boolean} isOneSided - Whether the test is one-sided (default is true).
+ * @returns {number} - The required sample size per group.
+ */
 function calculateSampleSize(p1, liftPercentage, confidenceLevel, power, numVariants = 2, isOneSided = true) {
-    /*
-    Calculate the required sample size for an A/B test.
-
-    Parameters:
-        p1 (float): The baseline conversion rate (proportion) for the control group.
-        liftPercentage (float): The expected percentage increase in conversion rate for the treatment group.
-        confidenceLevel (float): The desired confidence level (e.g., 95 for 95% confidence).
-        power (float): The desired statistical power (e.g., 80 for 80% power).
-        numVariants (int, optional): The number of variants being tested (default is 2 for control and one variant).
-        isOneSided (bool, optional): Whether the test is one-sided (default is True).
-
-    Returns:
-        int: The required sample size per group for the A/B test.
-    */
-
-    // Calculate p2 based on lift percentage
     let p2 = p1 * (1 + liftPercentage / 100);
+    p2 = Math.min(p2, 0.9999);
 
-    // Ensure p2 does not exceed 1
-    if (p2 >= 1) {
-        p2 = 0.9999;
-    }
+    const alpha = 1 - confidenceLevel / 100;
+    let zAlpha = isOneSided ? jStat.normal.inv(1 - alpha, 0, 1) : jStat.normal.inv(1 - alpha / 2, 0, 1);
+    const zBeta = jStat.normal.inv(power / 100, 0, 1);
 
-    // Calculate alpha and z-scores
-    let alpha = 1 - confidenceLevel / 100;
-    let zAlpha;
-    
-    if (isOneSided) {
-        zAlpha = jStat.normal.inv(1 - alpha, 0, 1);
-    } else {
-        zAlpha = jStat.normal.inv(1 - alpha / 2, 0, 1);
-    }
-    
-    let zBeta = jStat.normal.inv(power / 100, 0, 1);
-
-    // Adjust alpha for multiple variants (Bonferroni correction)
     if (numVariants > 2) {
-        let alphaAdjusted = alpha / (numVariants - 1);
+        const alphaAdjusted = alpha / (numVariants - 1);
         zAlpha = jStat.normal.inv(1 - alphaAdjusted, 0, 1);
     }
 
-    // Pooled proportion
-    let pAvg = (p1 + p2) / 2;
-    let sigmaPooled = Math.sqrt(2 * pAvg * (1 - pAvg));
+    const pAvg = (p1 + p2) / 2;
+    const sigmaPooled = Math.sqrt(2 * pAvg * (1 - pAvg));
+    const standardError = Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2));
+    const deltaP = p2 - p1;
 
-    // Standard error of proportions
-    let standardError = Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2));
+    const numerator = Math.pow(zAlpha * sigmaPooled + zBeta * standardError, 2);
+    const denominator = Math.pow(deltaP, 2);
 
-    // Calculate numerator and denominator for the sample size formula
-    let numerator = Math.pow(zAlpha * sigmaPooled + zBeta * standardError, 2);
-    let deltaP = p2 - p1;
-    let denominator = Math.pow(deltaP, 2);
-
-    // Calculate sample size per group
-    let sampleSizePerGroup = Math.ceil(numerator / denominator);
-
-    return sampleSizePerGroup;
+    return Math.ceil(numerator / denominator);
 }
 
-function calculateBayesianProbability(controlConversions, controlVisitors, variantConversions, variantVisitors, simulations = 100000) {
-    /*
-    Calculate the Bayesian probability that the variant is better than the control.
+/**
+ * Calculates the Bayesian probability that the variant is better than the control.
+ * @param {number} controlConversions - Number of conversions in the control group.
+ * @param {number} controlVisitors - Number of visitors in the control group.
+ * @param {number} variantConversions - Number of conversions in the variant group.
+ * @param {number} variantVisitors - Number of visitors in the variant group.
+ * @param {number} simulations - Number of Monte Carlo simulations to run (default is 100,000).
+ * @returns {Object} - An object containing probabilities and Bayes Factor.
+ */
+function calculateBayesianProbability(
+    controlConversions,
+    controlVisitors,
+    variantConversions,
+    variantVisitors,
+    simulations = 100000
+) {
+    const alphaPrior = 1;
+    const betaPrior = 1;
 
-    Parameters:
-        controlConversions (int): The number of conversions in the control group.
-        controlVisitors (int): The number of visitors in the control group.
-        variantConversions (int): The number of conversions in the variant group.
-        variantVisitors (int): The number of visitors in the variant group.
-        simulations (int): The number of Monte Carlo simulations to run (default is 100,000).
+    const controlPosteriorAlpha = alphaPrior + controlConversions;
+    const controlPosteriorBeta = betaPrior + (controlVisitors - controlConversions);
+    const variantPosteriorAlpha = alphaPrior + variantConversions;
+    const variantPosteriorBeta = betaPrior + (variantVisitors - variantConversions);
 
-    Returns:
-        Object: A dictionary containing the probability that the variant is better than the control and the Bayes Factor.
-    */
-
-    // Beta prior parameters (assume non-informative priors)
-    let alphaPrior = 1;
-    let betaPrior = 1;
-
-    // Posterior distributions
-    let controlPosteriorAlpha = alphaPrior + controlConversions;
-    let controlPosteriorBeta = betaPrior + (controlVisitors - controlConversions);
-    let variantPosteriorAlpha = alphaPrior + variantConversions;
-    let variantPosteriorBeta = betaPrior + (variantVisitors - variantConversions);
-
-    // Monte Carlo simulation to estimate P(Variant > Control)
     let variantWins = 0;
-    
+
     for (let i = 0; i < simulations; i++) {
-        let controlSample = jStat.beta.sample(controlPosteriorAlpha, controlPosteriorBeta);
-        let variantSample = jStat.beta.sample(variantPosteriorAlpha, variantPosteriorBeta);
+        const controlSample = jStat.beta.sample(controlPosteriorAlpha, controlPosteriorBeta);
+        const variantSample = jStat.beta.sample(variantPosteriorAlpha, variantPosteriorBeta);
 
         if (variantSample > controlSample) {
             variantWins++;
         }
     }
 
-    let probabilityVariantWins = variantWins / simulations;
-    let probabilityControlWins = 1 - probabilityVariantWins;
+    const probabilityVariantWins = variantWins / simulations;
+    const probabilityControlWins = 1 - probabilityVariantWins;
 
-    // Log Marginal Likelihood under H1
-    let ln_ml_H1 = (
+    const lnMlH1 =
         jStat.betaln(controlConversions + alphaPrior, controlVisitors - controlConversions + betaPrior) -
         jStat.betaln(alphaPrior, betaPrior) +
         jStat.betaln(variantConversions + alphaPrior, variantVisitors - variantConversions + betaPrior) -
-        jStat.betaln(alphaPrior, betaPrior)
-    );
+        jStat.betaln(alphaPrior, betaPrior);
 
-    // Log Marginal Likelihood under H0
-    let totalConversions = controlConversions + variantConversions;
-    let totalVisitors = controlVisitors + variantVisitors;
-    let ln_ml_H0 = (
+    const totalConversions = controlConversions + variantConversions;
+    const totalVisitors = controlVisitors + variantVisitors;
+    const lnMlH0 =
         jStat.betaln(totalConversions + alphaPrior, totalVisitors - totalConversions + betaPrior) -
-        jStat.betaln(alphaPrior, betaPrior)
-    );
+        jStat.betaln(alphaPrior, betaPrior);
 
-    // Compute the Bayes Factor (BF_10)
-    let ln_BF_10 = ln_ml_H1 - ln_ml_H0;
-    let BF_10 = Math.exp(ln_BF_10);
+    const lnBF10 = lnMlH1 - lnMlH0;
+    let BF10 = Math.exp(lnBF10);
 
-    // Handle potential issues with BF_10
-    if (!isFinite(BF_10)) {
-        BF_10 = ln_BF_10 > 0 ? Infinity : 0;
+    if (!isFinite(BF10)) {
+        BF10 = lnBF10 > 0 ? Infinity : 0;
     }
 
     return {
-        probability_variant_wins: probabilityVariantWins,
-        probability_control_wins: probabilityControlWins,
-        bayes_factor_H1_H0: BF_10
+        probabilityVariantWins,
+        probabilityControlWins,
+        bayesFactorH1H0: BF10
     };
 }
