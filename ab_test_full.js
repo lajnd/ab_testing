@@ -28,7 +28,7 @@ function fetchFormAndCalculate() {
             statisticalPowerInput
         );
 
-        // Update the DOM with the results
+        // Update the results
         document.getElementById('conversion-rate-control').innerText = `${results.conversionRateControl.toFixed(2)}%`;
         document.getElementById('conversion-rate-variant').innerText = `${results.conversionRateVariant.toFixed(2)}%`;
         document.getElementById('lift').innerText = `${results.lift.toFixed(2)}%`;

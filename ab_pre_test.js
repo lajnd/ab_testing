@@ -37,11 +37,25 @@ function calculateMDEOneSided(
     weeklyConversions,
     confidenceLevel,
     power,
-    numVariants,
-    weeks = [1, 2, 3, 4, 5, 6]
+    numVariants, // Excludes control
+    weeks = [1, 2, 3, 4, 5, 6],
+    multipleComparisonCorrection = false
 ) {
+    // Total number of groups including control
+    var totalVariants = numVariants + 1;
+
+    // Number of comparisons (control vs each variant)
+    var numComparisons = numVariants;
+
+    // Adjust confidence level for multiple comparisons if needed
+    var adjustedConfidenceLevel = confidenceLevel;
+    if (multipleComparisonCorrection) {
+        // Bonferroni correction
+        adjustedConfidenceLevel = 1 - ((1 - confidenceLevel) / numComparisons);
+    }
+
     // Convert confidence level and power to Z-scores for one-sided test
-    var zAlpha = jStat.normal.inv(confidenceLevel, 0, 1); // One-sided test
+    var zAlpha = jStat.normal.inv(adjustedConfidenceLevel, 0, 1); // One-sided test
     var zBeta = jStat.normal.inv(power, 0, 1);
 
     var baselineCr = weeklyConversions / weeklyTraffic; // Baseline conversion rate
@@ -51,7 +65,7 @@ function calculateMDEOneSided(
     for (var i = 0; i < weeks.length; i++) {
         var w = weeks[i];
         // Number of users per variant after w weeks
-        var totalUsersPerVariant = (weeklyTraffic / numVariants) * w;
+        var totalUsersPerVariant = (weeklyTraffic / totalVariants) * w;
 
         // Calculate standard error
         var se = Math.sqrt((2 * baselineCr * (1 - baselineCr)) / totalUsersPerVariant);
