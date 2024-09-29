@@ -9,14 +9,8 @@ function fetchFormAndCalculate() {
         const variantVisitors = Number(document.getElementById('variant-visitors').value);
         const variantConversions = Number(document.getElementById('variant-conversions').value);
         const confidenceLevelInput = Number(document.getElementById('confidence-level').value);
-        const statisticalPowerInput = Number(document.getElementById('statistical-power').value);
-
-        // Validate input values
-        if (
-            [controlVisitors, controlConversions, variantVisitors, variantConversions, confidenceLevelInput, statisticalPowerInput].some(isNaN)
-        ) {
-            throw new Error('Please enter valid numerical values.');
-        }
+        // const statisticalPowerInput = Number(document.getElementById('statistical-power').value);
+        const statisticalPowerInput = 80; // Default statistical for now
 
         // Perform A/B test calculations
         const results = calculateAbTest(
@@ -28,11 +22,14 @@ function fetchFormAndCalculate() {
             statisticalPowerInput
         );
 
+        // log all values to console
+        console.log(results);
+
         // Update the results
         document.getElementById('conversion-rate-control').innerText = `${results.conversionRateControl.toFixed(2)}%`;
         document.getElementById('conversion-rate-variant').innerText = `${results.conversionRateVariant.toFixed(2)}%`;
         document.getElementById('lift').innerText = `${results.lift.toFixed(2)}%`;
-        document.getElementById('difference-pp').innerText = `${results.differencePercentagePoints.toFixed(2)} pp`;
+        document.getElementById('absolute-difference').innerText = `${results.differencePercentagePoints.toFixed(2)}%`;
         document.getElementById('confidence-interval-diff').innerText =
             `${results.confidenceIntervalDifferencePP[0].toFixed(2)}% to ${results.confidenceIntervalDifferencePP[1].toFixed(2)}%`;
         document.getElementById('right-sided-interval').innerText =
@@ -40,7 +37,7 @@ function fetchFormAndCalculate() {
         document.getElementById('left-sided-interval').innerText =
             `${results.leftSidedIntervalPP[0] === -Infinity ? '-∞' : results.leftSidedIntervalPP[0].toFixed(2)}% to ${results.leftSidedIntervalPP[1].toFixed(2)}%`;
         document.getElementById('value-plus-minus-SE').innerText =
-            `${results.valuePlusMinus95SEPP[0].toFixed(2)} ± ${results.valuePlusMinus95SEPP[1].toFixed(2)} pp`;
+            `${results.valuePlusMinusSEPP[0].toFixed(2)} ± ${results.valuePlusMinusSEPP[1].toFixed(2)} %`;
         document.getElementById('p-value').innerText = results.pValue.toFixed(4);
         document.getElementById('z-score').innerText = results.zScore.toFixed(2);
         document.getElementById('significance').innerText = results.pValueOneSidedSignificance;
@@ -53,10 +50,30 @@ function fetchFormAndCalculate() {
         document.getElementById('bayesian-variant-wins').innerText = `${results.bayesianVariantWins.toFixed(2)}%`;
         document.getElementById('bayesian-control-wins').innerText = `${results.bayesianControlWins.toFixed(2)}%`;
         document.getElementById('bayes-factor').innerText = results.bayesFactorH1H0.toFixed(2);
+
+/*         // Update relative difference results
+        console.log(results.relativeConfidenceInterval);
+        const lowerCI = results.relativeConfidenceInterval[0].toFixed(2);
+        const upperCI = results.relativeConfidenceInterval[1].toFixed(2);
+        console.log(lowerCI, upperCI);
+        document.getElementById('relative-confidence-interval').innerText = `${lowerCI}% to ${upperCI}%`;
+
+        document.getElementById('relative-confidence-interval-right').innerText =
+            `${results.relativeConfidenceIntervalRightSided[0].toFixed(2)}% to ${results.relativeConfidenceIntervalRightSided[1] === Infinity ? '∞' : `${results.relativeConfidenceIntervalRightSided[1].toFixed(2)}%`}`;
+        document.getElementById('relative-confidence-interval-left').innerText =
+            `${results.relativeConfidenceIntervalLeftSided[0] === -Infinity ? '-∞' : results.relativeConfidenceIntervalLeftSided[0].toFixed(2)}% to ${results.relativeConfidenceIntervalLeftSided[1].toFixed(2)}%`;
+        
+            console.log(results.valuePlusMinusSEPP[1].toFixed(2),)
+        //document.getElementById('value-plus-minus-SE').innerText =
+        //    `${results.valuePlusMinusSEPP[0].toFixed(2)} ± ${results.valuePlusMinusSEPP[1].toFixed(2)} %`;
+        console.log(results.pValue.toFixed(4));
+        console.log(results.zScore.toFixed(2));
+        document.getElementById('relative-p-value').innerText = results.relativePValue.toFixed(4);
+        document.getElementById('relative-z-score').innerText = results.relativeZScore.toFixed(2); */
     } catch (error) {
         console.error(error);
         alert(`An error occurred: ${error.message}`);
-    }
+    };
 }
 
 /**
@@ -83,15 +100,6 @@ function calculateAbTest(
     // Calculate conversion rates
     const conversionRateControl = controlConversions / controlVisitors;
     const conversionRateVariant = variantConversions / variantVisitors;
-
-    // Validate conversion rates
-    if (
-        [conversionRateControl, conversionRateVariant].some(
-            rate => rate <= 0 || rate >= 1
-        )
-    ) {
-        throw new Error('Conversion rates must be between 0% and 100% (exclusive).');
-    }
 
     // Calculate p-value and z-score
     const pValueResult = calculatePValue(
@@ -129,9 +137,22 @@ function calculateAbTest(
     const lowerCIRightSidedPP = (absoluteDifference - zAlphaOneSided * standardErrorDifference) * 100;
     const upperCILeftSidedPP = (absoluteDifference + zAlphaOneSided * standardErrorDifference) * 100;
 
-    // Value ± 95% SE
-    const SE95PP = zAlphaTwoSided * standardErrorDifference * 100;
-    const valuePlusMinus95SEPP = [differencePercentagePoints, SE95PP];
+    // Value ± SE
+    const SEPP = zAlphaTwoSided * standardErrorDifference * 100;
+    const valuePlusMinusSEPP = [differencePercentagePoints, SEPP];
+
+    const relativeABResult = calculateRelativeDifference(
+        controlVisitors,
+        controlConversions,
+        variantVisitors,
+        variantConversions,
+        confidenceLevelInput,
+        statisticalPowerInput
+    );
+
+    const relativePValue = relativeABResult.pValue;
+    const relativeZScore = relativeABResult.zScore;
+    const relativeConfidenceInterval = relativeABResult.relativeConfidenceInterval;
 
     // Sample size calculation
     const sampleSizePerGroup = calculateSampleSize(
@@ -171,10 +192,16 @@ function calculateAbTest(
         confidenceIntervalDifferencePP,
         rightSidedIntervalPP: [lowerCIRightSidedPP, Infinity],
         leftSidedIntervalPP: [-Infinity, upperCILeftSidedPP],
-        valuePlusMinus95SEPP,
+        valuePlusMinusSEPP,
         pValue,
         zScore,
         pValueOneSidedSignificance,
+        relativeConfidenceInterval,
+        relativeConfidenceIntervalRightSided: relativeABResult.relativeConfidenceIntervalRightSided,
+        relativeConfidenceIntervalLeftSided: relativeABResult.relativeConfidenceIntervalLeftSided,
+        relativeDifferencePlusMinusSE: relativeABResult.relativeDifferencePlusMinusSE,
+        relativePValue,
+        relativeZScore,
         sampleSizePerGroup,
         confidenceIntervalControl: [controlCI[0] * 100, controlCI[1] * 100],
         confidenceIntervalVariant: [variantCI[0] * 100, variantCI[1] * 100],
@@ -297,6 +324,130 @@ function calculateSampleSize(p1, liftPercentage, confidenceLevel, power, numVari
     const denominator = Math.pow(deltaP, 2);
 
     return Math.ceil(numerator / denominator);
+}
+/**
+ * Calculates various statistical metrics for A/B testing.
+ * @param {number} controlVisitors - Number of visitors in the control group.
+ * @param {number} controlConversions - Number of conversions in the control group.
+ * @param {number} variantVisitors - Number of visitors in the variant group.
+ * @param {number} variantConversions - Number of conversions in the variant group.
+ * @param {number} confidenceLevelInput - Desired confidence level (e.g., 95 for 95% confidence).
+ * @param {number} statisticalPowerInput - Desired statistical power (e.g., 80 for 80% power).
+ * @returns {Object} - An object containing calculated metrics.
+ */
+/**
+ * Calculates the relative difference (lift) between two groups along with confidence intervals, Z-score, and P-value.
+ *
+ * @param {number} controlVisitors - Number of visitors in the control group (n1)
+ * @param {number} controlConversions - Number of conversions in the control group (x1)
+ * @param {number} variantVisitors - Number of visitors in the variant group (n2)
+ * @param {number} variantConversions - Number of conversions in the variant group (x2)
+ * @param {number} confidenceLevelInput - Confidence level (e.g., 0.95 for 95%)
+ * @returns {Object} - An object containing the relative difference, confidence intervals, SE, P-value, and Z-score
+ */
+function calculateRelativeDifference(controlVisitors, controlConversions, variantVisitors, variantConversions, confidenceLevelInput) {
+    // Input Validation
+    if (controlVisitors === 0 || variantVisitors === 0) {
+        throw new Error("Number of visitors must be greater than zero for both groups.");
+    }
+    if (controlConversions > controlVisitors || variantConversions > variantVisitors) {
+        throw new Error("Number of conversions cannot exceed number of visitors in any group.");
+    }
+
+    // 1. Calculate Proportions
+    const p1 = controlConversions / controlVisitors; // Control conversion rate
+    const p2 = variantConversions / variantVisitors; // Variant conversion rate
+
+    // 2. Calculate Relative Difference (Lift)
+    const lift = (p2 / p1) - 1;
+
+    // 3. Calculate Coefficients of Variation (CV1 & CV2)
+    const CV1 = Math.sqrt((1 - p1) / (p1 * controlVisitors));
+    const CV2 = Math.sqrt((1 - p2) / (p2 * variantVisitors));
+
+    // 4. Determine Z-value for the given confidence level
+    // For two-sided confidence interval
+    const alpha = 1 - confidenceLevelInput;
+    const Z = jStat.normal.inv(1 - alpha / 2, 0, 1); // e.g., 1.96 for 95% confidence
+
+    // 5. Compute the Confidence Interval for Relative Difference
+    const sqrtTerm = Math.sqrt(CV1 ** 2 + CV2 ** 2 - (Z ** 2) * (CV1 ** 2) * (CV2 ** 2));
+    const numeratorLower = 1 - (Z * CV1 ** 2);
+    const numeratorUpper = 1 - (Z * CV1 ** 2);
+
+    const factorLower = 1 - (Z * sqrtTerm);
+    const factorUpper = 1 + (Z * sqrtTerm);
+
+    const relativeCILower = ((1 + lift) * factorLower) / numeratorLower - 1;
+    const relativeCIUpper = ((1 + lift) * factorUpper) / numeratorUpper - 1;
+
+    const relativeCI = [relativeCILower, relativeCIUpper];
+
+    // 6. Compute One-Sided Confidence Intervals
+    const Z_oneSided = jStat.normal.inv(confidenceLevelInput, 0, 1); // e.g., 1.645 for 95% one-sided
+
+    // Right-Sided Confidence Interval
+    const sqrtTermOneSided = Math.sqrt(CV1 ** 2 + CV2 ** 2 - (Z_oneSided ** 2) * (CV1 ** 2) * (CV2 ** 2));
+    const factorRight = 1 + (Z_oneSided * sqrtTermOneSided);
+    const lowerCIRightSided = ((1 + lift) * factorRight) / (1 - (Z_oneSided * CV1 ** 2)) - 1;
+
+    // Left-Sided Confidence Interval
+    const factorLeft = 1 - (Z_oneSided * sqrtTermOneSided);
+    const upperCILeftSided = ((1 + lift) * factorLeft) / (1 - (Z_oneSided * CV1 ** 2)) - 1;
+
+    // 7. Calculate Standard Error (SE)
+    // Rearranging the two-sided CI formula to solve for SE is not straightforward.
+    // Instead, we approximate SE using the formula for relative difference:
+    const SE_relative = Math.sqrt(CV1 ** 2 + CV2 ** 2);
+
+    // 8. Calculate Z-score for Hypothesis Testing (H0: B ≤ A vs. Ha: B > A)
+    const zScoreFromCI = lift / SE_relative;
+
+    // 9. Calculate P-value for One-Tailed Test
+    const pValueFromCI = 1 - jStat.normal.cdf(zScoreFromCI, 0, 1);
+
+    // 10. Format Value ± SE
+    const SEPP = SE_relative.toFixed(3); // Rounded to 3 decimal places
+
+    // 11. Assemble the Results
+    return {
+        relativeDifference: lift,
+        relativeConfidenceInterval: relativeCI,
+        relativeConfidenceIntervalRightSided: [lowerCIRightSided, Infinity],
+        relativeConfidenceIntervalLeftSided: [-Infinity, upperCILeftSided],
+        relativeDifferencePlusMinusSE: `${lift.toFixed(4)} ±${SEPP}`,
+        pValue: pValueFromCI,
+        zScore: zScoreFromCI
+    };
+}
+
+/**
+ * Calculates the confidence interval bounds for a relative difference.
+ * @param {number} RelDiff - The relative difference between two groups.
+ * @param {number} Z - Z-value from a standard normal distribution (related to confidence level).
+ * @param {number} CV1 - Coefficient of variation for the first group.
+ * @param {number} CV2 - Coefficient of variation for the second group.
+ * @returns {Object} - An object containing the lower and upper confidence interval bounds.
+ */
+function computeRelativeCIBounds(RelDiff, Z, CV1, CV2) {
+    // Calculate the inner square root part of the equation
+    const sqrtTerm = Math.sqrt(CV1**2 + CV2**2 - Z**2 * CV1**2 * CV2**2);
+    
+    // Calculate the denominator part
+    const denominator = 1 - Z * CV1**2;
+    
+    // Calculate the positive and negative bounds of the CI
+    const positiveBound = (1 + Z * sqrtTerm) / denominator;
+    const negativeBound = (1 - Z * sqrtTerm) / denominator;
+    
+    // Calculate the final CI bounds for both positive and negative cases
+    const CI_positive = (RelDiff + 1) * positiveBound - 1;
+    const CI_negative = (RelDiff + 1) * negativeBound - 1;
+    
+    return {
+        CI_negative,
+        CI_positive
+    };
 }
 
 /**

@@ -30,10 +30,6 @@
             <label for="confidence-level">Confidence Level (%):</label>
             <input type="number" id="confidence-level" value="95" required>
         </div>
-        <div>
-            <label for="statistical-power">Statistical Power (%):</label>
-            <input type="number" id="statistical-power" value="80" required>
-        </div>
     </form>
 
     <button type="button" id="calculate-button" onclick="fetchFormAndCalculate()">Calculate</button>
@@ -53,8 +49,8 @@
             <td id="lift">-</td>
         </tr>
         <tr>
-            <td>Difference (pp) ✔</td>
-            <td id="difference-pp">-</td>
+            <td>Absolute difference✔</td>
+            <td id="absolute-difference">-</td>
         </tr>
         <tr>
             <td>Confidence Interval (Difference, %) ✔</td>
@@ -69,7 +65,7 @@
             <td id="left-sided-interval">-</td>
         </tr>
         <tr>
-            <td>Value ± 95% SE (pp) ✔</td>
+            <td>Value ± SE (%) ✔</td>
             <td id="value-plus-minus-SE">-</td>
         </tr>
         <tr>
@@ -85,7 +81,7 @@
             <td id="significance">-</td>
         </tr>
         <tr>
-            <td>Sample Size Per Group ✔</td>
+            <td>Sample Size Per Group ❌</td>
             <td id="sample-size">-</td>
         </tr>
         <tr>
@@ -111,6 +107,33 @@
         <tr>
             <td>Bayes Factor (H1/H0) ✔</td>
             <td id="bayes-factor">-</td>
+        </tr>
+        <tr>
+            <td><b>Relative differences (TODO)</b></td>
+        </tr>
+        <tr>
+            <td>Relative Confidence Interval (%) ✔</td>
+            <td id="relative-confidence-interval">-</td>
+        </tr>
+        <tr>
+            <td>Relative Right-Sided Interval (%) ✔</td>
+            <td id="relative-confidence-interval-right">-</td>
+        </tr>
+        <tr>
+            <td>Relative Left-Sided Interval (%) ✔</td>
+            <td id="relative-confidence-interval-left">-</td>
+        </tr>
+        <tr>
+            <td>Relative Difference ± SE ✔</td>
+            <td id="relative-difference-plus-minus-SE">-</td>
+        </tr>
+        <tr>
+            <td>Relative P-Value ✔</td>
+            <td id="relative-p-value">-</td>
+        </tr>
+        <tr>
+            <td>Relative Z-Score ✔</td>
+            <td id="relative-z-score">-</td>
         </tr>
     </table>
 </body>
