@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weekly MDE Calculator</title>
+</head>
+<body>
+    <h1>Weekly MDE Calculator</h1>
+
+    <form>
+        <label for="weekly-traffic">Weekly Traffic:</label>
+        <input type="number" id="weekly-traffic" name="weekly-traffic" required><br><br>
+
+        <label for="weekly-conversions">Weekly Conversions:</label>
+        <input type="number" id="weekly-conversions" name="weekly-conversions" required><br><br>
+
+        <label for="confidence-level">Confidence Level (%):</label>
+        <input type="number" id="confidence-level" name="confidence-level" value="95" required><br><br>
+
+        <label for="power-level">Power Level (%):</label>
+        <input type="number" id="power-level" name="power-level" value="80" required><br><br>
+
+        <!-- Radio buttons for one-sided or two-sided test -->
+        <fieldset>
+            <legend>Test Type:</legend>
+            <label>
+                <input type="radio" name="test-type" value="one-sided" checked> One-sided
+            </label>
+            <label>
+                <input type="radio" name="test-type" value="two-sided"> Two-sided
+            </label>
+        </fieldset><br>
+
+        <button type="button" onclick="fetchAndCalculate()">Calculate MDE</button>
+    </form>
+
+    <!-- Table to display the results -->
+    <h2>Results</h2>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Number of weeks running test</th>
+                <th>Minimum Detectable Effect (MDE)</th>
+                <th>Visitors per variant</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td id="week-1"></td>
+                <td id="mde-week-1"></td>
+                <td id="visitors-week-1"></td>
+            </tr>
+            <tr>
+                <td id="week-2"></td>
+                <td id="mde-week-2"></td>
+                <td id="visitors-week-2"></td>
+            </tr>
+            <tr>
+                <td id="week-3"></td>
+                <td id="mde-week-3"></td>
+                <td id="visitors-week-3"></td>
+            </tr>
+            <tr>
+                <td id="week-4"></td>
+                <td id="mde-week-4"></td>
+                <td id="visitors-week-4"></td>
+            </tr>
+            <tr>
+                <td id="week-5"></td>
+                <td id="mde-week-5"></td>
+                <td id="visitors-week-5"></td>
+            </tr>
+            <tr>
+                <td id="week-6"></td>
+                <td id="mde-week-6"></td>
+                <td id="visitors-week-6"></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- Place the script at the end of the body -->
+    <script src="https://cdn.jsdelivr.net/npm/jstat@latest/dist/jstat.min.js"></script>
+    <script src="calculate_mde.js"></script>
+</body>
+</html>

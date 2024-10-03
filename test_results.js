@@ -6,7 +6,7 @@ function fetchFormAndCalculate() {
         const variantVisitors = Number(document.getElementById('variant-visitors').value);
         const variantConversions = Number(document.getElementById('variant-conversions').value);
         const confidenceLevelInput = Number(document.getElementById('confidence-level').value);
-        const statisticalPowerInput = 80; // Default statistical power for now
+        const statisticalPowerInput = Number(document.getElementById('statistical-power').value);
 
         // Perform A/B test calculations
         const results = calculateAbTest(
@@ -17,8 +17,6 @@ function fetchFormAndCalculate() {
             confidenceLevelInput,
             statisticalPowerInput
         );
-
-        console.log(results);
 
         // Helper function to safely format values
         function formatValue(value) {
@@ -45,14 +43,13 @@ function fetchFormAndCalculate() {
         document.getElementById('value-plus-minus-SE').innerText =
             `${formatValue(relativeDifferencePercent)} ± ${formatValue(results.valuePlusMinusSEPP[1])} %`;
         document.getElementById('p-value').innerText = results.pValue.toFixed(6);
+        // pValueTwoSided
+        document.getElementById('p-value-two-sided').innerText = results.pValueTwoSided.toFixed(6);
         document.getElementById('z-score').innerText = formatValue(results.zScore);
         document.getElementById('significance').innerText = results.pValueOneSidedSignificance;
-        document.getElementById('control-ci').innerText =
-            `${formatValue(results.confidenceIntervalControl[0])}% to ${formatValue(results.confidenceIntervalControl[1])}%`;
-        document.getElementById('variant-ci').innerText =
-            `${formatValue(results.confidenceIntervalVariant[0])}% to ${formatValue(results.confidenceIntervalVariant[1])}%`;
-        // Update Bayesian results
+        // bayesian-variant-wins
         document.getElementById('bayesian-variant-wins').innerText = `${formatValue(results.bayesianVariantWins)}%`;
+        // bayesian-control-wins
         document.getElementById('bayesian-control-wins').innerText = `${formatValue(results.bayesianControlWins)}%`;
         document.getElementById('bayes-factor').innerText = formatValue(results.bayesFactorH1H0);
         // Update relative difference results
@@ -111,6 +108,18 @@ function calculateAbTest(
     const pValue = pValueResult.pValue;
     const pValueOneSidedSignificance = pValue < (1 - confidenceLevel) ? 'Significant' : 'Not Significant';
 
+    // Calculate p-value for two-sided test
+    const pValueResultTwoSided = calculatePValue(
+        controlConversions,
+        controlVisitors,
+        variantConversions,
+        variantVisitors,
+        false
+    );
+
+    const pValueTwoSided = pValueResultTwoSided.pValue;
+    
+
     // Calculate lift and difference in percentage points
     const absoluteDifference = conversionRateVariant - conversionRateControl;
     const lift = (absoluteDifference / conversionRateControl) * 100;
@@ -165,10 +174,16 @@ function calculateAbTest(
     const controlCI = calculateConfidenceInterval(conversionRateControl, controlVisitors, zAlpha);
     const variantCI = calculateConfidenceInterval(conversionRateVariant, variantVisitors, zAlpha);
 
-
-
     // Bayesian probability
     const bayesianResults = calculateBayesianProbability(
+        controlConversions,
+        controlVisitors,
+        variantConversions,
+        variantVisitors
+    );
+
+    // get new bayesian results using calculateLogOddsRatioBayesian
+    const bayesianResults2 = calculateLogOddsRatioBayesian(
         controlConversions,
         controlVisitors,
         variantConversions,
@@ -185,6 +200,7 @@ function calculateAbTest(
         leftSidedIntervalPP: [-Infinity, upperCILeftSidedPP],
         valuePlusMinusSEPP,
         pValue,
+        pValueTwoSided,
         zScore,
         pValueOneSidedSignificance,
         relativeConfidenceInterval,
@@ -193,11 +209,9 @@ function calculateAbTest(
         relativeDifferencePlusMinusSE: relativeABResult.relativeDifferencePlusMinusSE,
         pValueIterative,
         relativeZScore,
-        confidenceIntervalControl: [controlCI[0] * 100, controlCI[1] * 100],
-        confidenceIntervalVariant: [variantCI[0] * 100, variantCI[1] * 100],
         bayesianVariantWins: bayesianResults.probabilityVariantWins * 100,
         bayesianControlWins: bayesianResults.probabilityControlWins * 100,
-        bayesFactorH1H0: bayesianResults.bayesFactorH1H0
+        bayesFactorH1H0: bayesianResults.bayesFactor
     };
 }
 
@@ -211,28 +225,6 @@ function calculateAbTest(
 function calculateConfidenceInterval(conversionRate, visitors, zAlpha) {
     const marginOfError = zAlpha * Math.sqrt((conversionRate * (1 - conversionRate)) / visitors);
     return [conversionRate - marginOfError, conversionRate + marginOfError];
-}
-
-/**
- * Calculates the relative Minimum Detectable Effect (MDE) as a percentage.
- * @param {number} controlSampleSize - Sample size of the control group.
- * @param {number} variantSampleSize - Sample size of the variant group.
- * @param {number} baselineConversionRate - Baseline conversion rate (proportion between 0 and 1).
- * @param {number} confidenceLevel - Desired confidence level (proportion between 0 and 1).
- * @param {number} statisticalPower - Desired statistical power (proportion between 0 and 1).
- * @returns {number} - Relative MDE as a percentage.
- */
-function calculateRelativeMDE(controlSampleSize, variantSampleSize, baselineConversionRate, confidenceLevel, statisticalPower) {
-    const zAlpha = jStat.normal.inv(confidenceLevel, 0, 1);
-    const zBeta = jStat.normal.inv(statisticalPower, 0, 1);
-
-    const standardError = Math.sqrt(
-        (baselineConversionRate * (1 - baselineConversionRate) / controlSampleSize) +
-        (baselineConversionRate * (1 - baselineConversionRate) / variantSampleSize)
-    );
-
-    const absoluteMDE = (zAlpha + zBeta) * standardError;
-    return (absoluteMDE / baselineConversionRate) * 100;
 }
 
 /**
@@ -530,8 +522,9 @@ function calculateBayesianProbability(
     variantVisitors,
     simulations = 100000
 ) {
-    const alphaPrior = 1;
-    const betaPrior = 1;
+    // neutral prior
+    const alphaPrior = 8;
+    const betaPrior = 42;
 
     const controlPosteriorAlpha = alphaPrior + controlConversions;
     const controlPosteriorBeta = betaPrior + (controlVisitors - controlConversions);
@@ -574,6 +567,82 @@ function calculateBayesianProbability(
     return {
         probabilityVariantWins,
         probabilityControlWins,
-        bayesFactorH1H0: BF10
+        bayesFactor: BF10
     };
 }
+
+function calculateLogOddsRatioBayesian(
+    controlConversions, controlVisitors,
+    variantConversions, variantVisitors,
+    simulations = 10000
+  ) {
+    // Calculate probabilities of conversion for control and variant groups
+    const pControl = controlConversions / controlVisitors;
+    const pVariant = variantConversions / variantVisitors;
+    
+    // Calculate log odds for control and variant
+    function logOdds(p) {
+      return Math.log(p / (1 - p));
+    }
+  
+    const logOddsControl = logOdds(pControl);
+    const logOddsVariant = logOdds(pVariant);
+    
+    // Calculate the observed log odds ratio
+    const observedLogOddsRatio = logOddsVariant - logOddsControl;
+  
+    // Define prior: normal prior centered on 0 with standard deviation 1
+    const priorMean = 0;
+    const priorSD = 1;
+  
+    // Function to simulate from normal distribution
+    function normalRandom(mean, sd) {
+      let u = Math.random();
+      let v = Math.random();
+      return mean + Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v) * sd;
+    }
+    
+    // Function to calculate likelihood of the data given probability p
+    function likelihood(p, conversions, visitors) {
+      return Math.pow(p, conversions) * Math.pow(1 - p, visitors - conversions);
+    }
+  
+    // Perform Monte Carlo sampling
+    let logOddsRatioSamples = [];
+    let likelihoodsH1 = 0;
+    let likelihoodsH0 = 0;
+    
+    for (let i = 0; i < simulations; i++) {
+      // Sample log odds ratio from prior
+      let sampledLogOddsRatio = normalRandom(priorMean, priorSD);
+      let pSample = Math.exp(sampledLogOddsRatio) / (1 + Math.exp(sampledLogOddsRatio));
+      
+      // Calculate likelihood for control and variant under sampled log odds ratio
+      let likelihoodControlH1 = likelihood(pSample, controlConversions, controlVisitors);
+      let likelihoodVariantH1 = likelihood(pSample, variantConversions, variantVisitors);
+      
+      likelihoodsH1 += likelihoodControlH1 * likelihoodVariantH1;
+      
+      // Null hypothesis log odds ratio = 0 (i.e., p = pControl)
+      let likelihoodControlH0 = likelihood(pControl, controlConversions, controlVisitors);
+      let likelihoodVariantH0 = likelihood(pControl, variantConversions, variantVisitors);
+      
+      likelihoodsH0 += likelihoodControlH0 * likelihoodVariantH0;
+      
+      logOddsRatioSamples.push(sampledLogOddsRatio);
+    }
+  
+    // Calculate posterior probabilities
+    let variantWins = logOddsRatioSamples.filter(sample => sample > observedLogOddsRatio).length;
+    const probabilityVariantWins = variantWins / simulations;
+    const probabilityControlWins = 1 - probabilityVariantWins;
+  
+    // Calculate Bayes Factor BF01 (null hypothesis vs alternative)
+    let BF01 = likelihoodsH0 / likelihoodsH1;
+  
+    return {
+      probabilityVariantWins,
+      probabilityControlWins,
+      bayesFactor: BF01
+    };
+  }

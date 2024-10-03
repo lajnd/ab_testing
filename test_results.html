@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>A/B Test Calculator</title>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/jstat/1/jstat.min.js"></script>
-    <script src="ab_test_full.js"></script> 
+    <script src="test_results.js"></script> 
 </head>
 <body>
     <h1>A/B Test Calculator</h1>
@@ -30,6 +30,10 @@
             <label for="confidence-level">Confidence Level (%):</label>
             <input type="number" id="confidence-level" value="95" required>
         </div>
+        <div></div>
+            <label for="statistical-power">Power level (%):</label>
+            <input type="number" id="statistical-power" value="80" required>
+        </div>
     </form>
 
     <button type="button" id="calculate-button" onclick="fetchFormAndCalculate()">Calculate</button>
@@ -47,6 +51,9 @@
         <tr>
             <td>Lift (%) ✔</td>
             <td id="lift">-</td>
+        </tr>
+        <tr></tr>
+            <td><b>Absolute differences</b></td>
         </tr>
         <tr>
             <td>Absolute difference✔</td>
@@ -69,9 +76,12 @@
             <td id="value-plus-minus-SE">-</td>
         </tr>
         <tr>
-            <td>P-Value ✔</td>
+            <td>P-Value (One-sided) ✔</td>
             <td id="p-value">-</td>
         </tr>
+        <tr>
+            <td>P-value (Two-sided) ✔</td>
+            <td id="p-value-two-sided">-</td>
         <tr>
             <td>Z-Score ✔</td>
             <td id="z-score">-</td>
@@ -79,14 +89,6 @@
         <tr>
             <td>Significance (One-sided) ✔</td>
             <td id="significance">-</td>
-        </tr>
-        <tr>
-            <td>Confidence Interval (Control, %) ❌</td>
-            <td id="control-ci">-</td>
-        </tr>
-        <tr>
-            <td>Confidence Interval (Variant, %) ❌</td>
-            <td id="variant-ci">-</td>
         </tr>
         <tr>
             <td>Bayesian Probability: Variant Wins (%) ❌</td>
@@ -97,34 +99,34 @@
             <td id="bayesian-control-wins">-</td>
         </tr>
         <tr>
-            <td>Bayes Factor (H1/H0) ✔</td>
+            <td>Bayes Factor (H1/H0) ❌</td>
             <td id="bayes-factor">-</td>
         </tr>
         <tr>
-            <td><b>Relative differences (TODO)</b></td>
+            <td><b>Relative differences</b></td>
         </tr>
         <tr>
-            <td>Relative Confidence Interval (%) ✔</td>
+            <td>Relative Confidence Interval (Difference, %) ❌</td>
             <td id="relative-confidence-interval">-</td>
         </tr>
         <tr>
-            <td>Relative Right-Sided Interval (%) ✔</td>
+            <td>Relative Right-Sided Interval (%) ❌</td>
             <td id="relative-confidence-interval-right">-</td>
         </tr>
         <tr>
-            <td>Relative Left-Sided Interval (%) ✔</td>
+            <td>Relative Left-Sided Interval (%) ❌</td>
             <td id="relative-confidence-interval-left">-</td>
         </tr>
         <tr>
-            <td>Relative Difference ± SE ✔</td>
+            <td>Relative Difference ± SE ❌</td>
             <td id="relative-difference-plus-minus-SE">-</td>
         </tr>
         <tr>
-            <td>Relative P-Value ✔</td>
+            <td>Relative P-Value ❌</td>
             <td id="relative-p-value">-</td>
         </tr>
         <tr>
-            <td>Relative Z-Score ✔</td>
+            <td>Relative Z-Score ❌</td>
             <td id="relative-z-score">-</td>
         </tr>
     </table>

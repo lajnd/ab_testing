@@ -28,7 +28,7 @@
             <input type="number" id="statistical-power" value="80" required>
         </div>
         <div>
-            <label for="number-of-variants">Number of Variants:</label>
+            <label for="number-of-variants">Number of Variants (including control):</label>
             <input type="number" id="number-of-variants" value="2" required>
         </div>
     </form>
@@ -36,6 +36,12 @@
     <button type="button" id="calculate-button" onclick="fetchFormAndCalculateMDE()">Calculate</button>
 
     <h2>Results</h2>
+    <table border="1">
+            <tr>
+                <td>Baseline Conversion Rate %</td>
+                <td id="baseline-cr"></td>
+            </tr>
+    </table>
     <table border="1">
         <thead>
             <tr>
